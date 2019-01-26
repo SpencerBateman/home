@@ -14,9 +14,8 @@ public class Orbit : MonoBehaviour {
   void Start () {
     Planet = gameObject.transform.parent.gameObject;
     center = Planet.transform;
-    //transform.position = (transform.position - center.position).normalized * radius + center.position;
     radius = .7f;
-    radiusSpeed = 10f;
+    radiusSpeed = 0f;
     rotationSpeed = 10f;
     axis = new Vector3(Random.Range(-1.0f, 1.0f), Random.Range(-1.0f, 1.0f), Random.Range(-1.0f,1.0f));
   }
