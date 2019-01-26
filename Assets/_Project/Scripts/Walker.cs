@@ -11,55 +11,38 @@ public class Walker : MonoBehaviour
     private float minVelocity;
     private float maxVelocity;
     private float randomness;
-    //private GameObject chasee;
 
-    // Start is called before the first frame update
+    private Vector3 tempForce;
+    private Transform visibleSheep;
+
     void Start()
     {
+        GetComponent<MeshRenderer>().enabled = false;
+        visibleSheep = transform.GetChild(0);
+
         rb = GetComponent<Rigidbody>();
-        Physics.gravity = Vector3.zero;
         rb.velocity = new Vector3(Random.value * 2 - 1, Random.value * 2 - 1, Random.value * 2 - 1);
         rb.AddForce((manager.transform.position - transform.position).normalized * acceleration);
     }
 
     void FixedUpdate()
     {
-        //rb.velocity = rb.velocity + Calc() * Time.deltaTime;
+        //have to limit tempForce
+        rb.AddForce(tempForce);
         rb.AddForce((manager.transform.position - transform.position).normalized * acceleration);
-    }
+        tempForce = Vector3.zero;
 
-    IEnumerator Steering()
-    {
-        yield return null;
-        while (true)
-        {
-            rb.velocity = rb.velocity + Calc() * Time.deltaTime;
-
-            float waitTime = Random.Range(0.3f, 0.5f);
-            yield return new WaitForSeconds(waitTime);
-        }
+        visibleSheep.LookAt(manager.transform.position, visibleSheep.up);
+        visibleSheep.Rotate(Vector3.right * 90f);
     }
 
     public void SetManager(FlockManager flockManager)
     {
         manager = flockManager;
-        minVelocity = manager.minVelocity;
-        maxVelocity = manager.maxVelocity;
-        randomness = manager.randomness;
-        StartCoroutine("Steering");
     }
 
-    private Vector3 Calc()
+    public void AddForce(Vector3 f)
     {
-        Vector3 randomize = new Vector3((Random.value * 2) - 1, (Random.value * 2) - 1, (Random.value * 2) - 1);
-
-        randomize.Normalize();
-        Vector3 flockCenter = manager.flockCenter;
-        Vector3 flockVelocity = manager.flockVelocity;
-
-        flockCenter = flockCenter - transform.localPosition;
-        flockVelocity = flockVelocity - rb.velocity;
-
-        return (flockCenter + flockVelocity + randomize * randomness);
+        tempForce += f;
     }
 }
