@@ -1,28 +1,33 @@
-﻿using System.Collections;
-using UnityEngine;
+﻿using UnityEngine;
 
 public class Seeker : MonoBehaviour
 {
-    private Rigidbody rb;
-    private float acceleration = 9.8f;
-    private FlockManager manager;
+    public float maxspeed = 0.02f;
+    public float maxforce = 0.05f;
 
-    private bool inited = false;
-    private float minVelocity;
-    private float maxVelocity;
-    private float randomness;
+    private Rigidbody rb;
+    private float gravity = 9.8f;
+    private FlockManager manager;
 
     private Vector3 tempForce;
     private Transform body;
-    private Transform target;
+    public Transform target;
+    private Pather path;
+    private int sheepIndex;
 
-    // Start is called before the first frame update
+    public float velocity;
+
+    public bool poke;
+
     void Start()
     {
         GetComponent<MeshRenderer>().enabled = false;
         body = transform.GetChild(0);
 
         rb = GetComponent<Rigidbody>();
+        body.LookAt(manager.transform.position, body.up);
+        body.Rotate(Vector3.right * 90f);
+        rb.Sleep();
     }
 
     void FixedUpdate()
@@ -31,31 +36,53 @@ public class Seeker : MonoBehaviour
         if (target)
         {
             Vector3 diff = target.position - transform.position;
-            if(diff.magnitude > 0.1f)
+            if(diff.magnitude > 0.01f)
             {
-                rb.AddForce((diff.normalized - rb.velocity) * 0.2f);
+                rb.position += Steer() * Time.deltaTime;
+                body.LookAt(manager.transform.position, body.up);
+                body.Rotate(Vector3.right * 90f);
 
-            } else if(diff.magnitude < 0.04f)
+            } else
             {
-                Debug.Log("here");
+                target = null;
+                rb.Sleep();
+                if (path.PathComplete)
+                {
+                    Debug.Log("We Did It!");
+                }
             }
-        }
-
-        if(rb.velocity.magnitude > 0.0005f)
+        } else if(path && poke)
         {
-            body.LookAt(manager.transform.position, body.up);
-            body.Rotate(Vector3.right * 90f);
+            poke = false;
+            target = path.PokeSheep(sheepIndex);
+        } else
+        {
         }
 
-        rb.AddForce((manager.transform.position - transform.position).normalized * acceleration);
+        rb.AddForce((manager.transform.position - transform.position).normalized * gravity);
+
+        velocity = rb.velocity.magnitude;
     }
 
-    public void SetManager(FlockManager flockManager, Transform waypoint)
+    private Vector3 Steer()
+    {
+        Vector3 desired = (target.position - transform.position).normalized * maxspeed;
+        desired -= rb.velocity;
+        desired = Vector3.ClampMagnitude(desired, maxforce);
+
+        return desired;
+    }
+
+    public void SetManager(FlockManager flockManager)
     {
         manager = flockManager;
         transform.LookAt(manager.transform.position);
         transform.Rotate(Vector3.right * 90f);
+    }
 
-        target = waypoint;
+    public void SetPath(Pather p, int i)
+    {
+        path = p;
+        sheepIndex = i;
     }
 }

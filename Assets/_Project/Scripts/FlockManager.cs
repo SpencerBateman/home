@@ -2,13 +2,11 @@
 
 public class FlockManager : MonoBehaviour
 {
-    public float minVelocity = 5;
-    public float maxVelocity = 20;
-    public float randomness = 1;
+    public bool hasFlock;
 
     public GameObject walkerPrefab;
     public GameObject seekerPrefab;
-    public Transform waypoint;
+    public Pather path;
 
     public int flockSize = 20;
     public float separation = 0.1f;
@@ -24,22 +22,34 @@ public class FlockManager : MonoBehaviour
     void Awake()
     {
         Physics.gravity = Vector3.zero;
-
-        walkers = new Walker[0];
-        /*walkers = new Walker[flockSize];
-        for (var i = 0; i < flockSize; i++)
+        if(hasFlock)
         {
-            Vector3 position = new Vector3(Random.value * 2 - 1, Random.value * 2 - 1, Random.value * 2 - 1).normalized * 0.01f;
+            walkers = new Walker[flockSize];
+            for (var i = 0; i < flockSize; i++)
+            {
+                Vector3 position = new Vector3(Random.value * 2 - 1, Random.value * 2 - 1, Random.value * 2 - 1).normalized * 0.01f;
 
-            Walker w = Instantiate(walkerPrefab, transform).GetComponent<Walker>();
-            w.transform.localPosition = position;
-            w.SetManager(this);
-            walkers[i] = w;
-        }*/
+                Walker w = Instantiate(walkerPrefab, transform).GetComponent<Walker>();
+                w.transform.localPosition = position;
+                w.SetManager(this);
+                walkers[i] = w;
+            }
+        }
+        else
+        {
+            walkers = new Walker[0];
+        }
+    }
 
+    private void Start()
+    {
         Seeker s = Instantiate(seekerPrefab, transform).GetComponent<Seeker>();
-        s.transform.localPosition = new Vector3(Random.value * 2 - 1, Random.value * 2 - 1, Random.value * 2 - 1).normalized * 0.01f;
-        s.SetManager(this, waypoint);
+        path.SetupSheep(s);
+        s.SetManager(this);
+
+        Seeker s2 = Instantiate(seekerPrefab, transform).GetComponent<Seeker>();
+        path.SetupSheep(s2);
+        s2.SetManager(this);
     }
 
     void Update()
@@ -48,6 +58,7 @@ public class FlockManager : MonoBehaviour
         {
             w.AddForce(Separate(w.transform));
             w.AddForce(Align(w.transform));
+            //w.AddForce(Cohere(w.transform));
         }
     }
 

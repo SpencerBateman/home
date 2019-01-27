@@ -1,19 +1,18 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
+﻿using UnityEngine;
 
 public class Node : MonoBehaviour {
-  public bool Blocked;
+    public bool blocked;
 
-  // Update is called once per frame
-  void Update() {
-  }
+    void Awake()
+    {
+        transform.localPosition = transform.localPosition.normalized * 0.2f;
+    }
 
-  public void unBlock() {
-    Blocked = false;
-  }
+    public void UnBlock() {
+        blocked = false;
+    }
 
-  public bool isBlocked() {
-    return Blocked;
-  }
+    public bool IsBlocked() {
+        return blocked;
+    }
 }
