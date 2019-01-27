@@ -8,6 +8,7 @@ public class Node : MonoBehaviour {
         transform.localPosition = transform.localPosition.normalized * scale;
     }
 
+
     public void UnBlock() {
         blocked = false;
     }
