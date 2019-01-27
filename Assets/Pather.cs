@@ -38,6 +38,8 @@ public class Pather : MonoBehaviour {
 
     public Transform PokeSheep(int sheepNumber) {
         Transform result = null;
+        if (PathComplete) return result;
+
         if (sheepNumber == 1) {
             if (!NextNodeBlocked(sheep1Index, 1)) {
                 sheep1Index += 1;

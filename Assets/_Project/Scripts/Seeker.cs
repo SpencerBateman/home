@@ -1,6 +1,9 @@
 ﻿using UnityEngine;
+using HTC.UnityPlugin.ColliderEvent;
+using HTC.UnityPlugin.Utility;
+using HTC.UnityPlugin.Vive;
 
-public class Seeker : MonoBehaviour
+public class Seeker : MonoBehaviour, IColliderEventHoverEnterHandler
 {
     public float maxspeed = 0.02f;
     public float maxforce = 0.05f;
@@ -18,6 +21,8 @@ public class Seeker : MonoBehaviour
     public float velocity;
 
     public bool poke;
+
+    private bool moving;
 
     void Start()
     {
@@ -45,6 +50,7 @@ public class Seeker : MonoBehaviour
             } else
             {
                 target = null;
+                moving = false;
                 rb.Sleep();
                 if (path.PathComplete)
                 {
@@ -54,9 +60,8 @@ public class Seeker : MonoBehaviour
         } else if(path && poke)
         {
             poke = false;
-            target = path.PokeSheep(sheepIndex);
-        } else
-        {
+            //moving = true;
+            //target = path.PokeSheep(sheepIndex);
         }
 
         rb.AddForce((manager.transform.position - transform.position).normalized * gravity);
@@ -84,5 +89,17 @@ public class Seeker : MonoBehaviour
     {
         path = p;
         sheepIndex = i;
+    }
+
+    public void OnColliderEventHoverEnter(ColliderHoverEventData eventData)
+    {
+        if(!moving)
+        {
+            moving = true;
+            target = path.PokeSheep(sheepIndex);
+        }
+        Debug.Log(eventData.eventCaster.transform.GetComponentInParent<VivePoseTracker>());
+        //ViveInput.TriggerHapticPulseEx(eventData.eventCaster.transform.GetComponentInParent<VivePoseTracker>().viveRole, 500);
+        //SetGravityEnabled(!m_gravityEnabled);
     }
 }
