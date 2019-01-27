@@ -50,6 +50,8 @@ public class FlockManager : MonoBehaviour
         Seeker s2 = Instantiate(seekerPrefab, transform).GetComponent<Seeker>();
         path.SetupSheep(s2);
         s2.SetManager(this);
+
+        path.SetupNodes(GetComponent<SphereCollider>().radius);
     }
 
     void Update()

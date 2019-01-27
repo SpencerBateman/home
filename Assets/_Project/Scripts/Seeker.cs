@@ -1,7 +1,7 @@
 ﻿using UnityEngine;
 using HTC.UnityPlugin.ColliderEvent;
-using HTC.UnityPlugin.Utility;
 using HTC.UnityPlugin.Vive;
+using HTC.UnityPlugin.VRModuleManagement;
 
 public class Seeker : MonoBehaviour, IColliderEventHoverEnterHandler
 {
@@ -23,6 +23,11 @@ public class Seeker : MonoBehaviour, IColliderEventHoverEnterHandler
     public bool poke;
 
     private bool moving;
+    private Vector3 last;
+    public Vector3 controllerVelocity;
+    public Vector3 desired;
+    float adjustTime = 0.5f;
+    float currentTime = 0;
 
     void Start()
     {
@@ -41,41 +46,50 @@ public class Seeker : MonoBehaviour, IColliderEventHoverEnterHandler
         if (target)
         {
             Vector3 diff = target.position - transform.position;
-            if(diff.magnitude > 0.01f)
+            if(diff.magnitude > 0.025f)
             {
-                rb.position += Steer() * Time.deltaTime;
+                desired = (target.position - transform.position).normalized * maxspeed;
+                desired -= rb.velocity;
+                desired = Vector3.ClampMagnitude(desired, maxforce);
+
+                if(currentTime < adjustTime)
+                {
+                    rb.velocity = Vector3.Lerp(controllerVelocity, desired, currentTime / adjustTime);
+                    currentTime += Time.deltaTime;
+                } else
+                {
+                    rb.velocity = desired;
+                }
+
+                last = desired;
+
+
                 body.LookAt(manager.transform.position, body.up);
                 body.Rotate(Vector3.right * 90f);
+                velocity = diff.magnitude;
 
             } else
             {
                 target = null;
                 moving = false;
+                controllerVelocity = Vector3.zero;
+                last = Vector3.zero;
+                currentTime = 0;
                 rb.Sleep();
                 if (path.PathComplete)
                 {
                     Debug.Log("We Did It!");
                 }
             }
-        } else if(path && poke)
+        } else if(path && poke && !moving)
         {
             poke = false;
-            //moving = true;
-            //target = path.PokeSheep(sheepIndex);
+            currentTime = 1;
+            moving = true;
+            target = path.PokeSheep(sheepIndex);
         }
 
         rb.AddForce((manager.transform.position - transform.position).normalized * gravity);
-
-        velocity = rb.velocity.magnitude;
-    }
-
-    private Vector3 Steer()
-    {
-        Vector3 desired = (target.position - transform.position).normalized * maxspeed;
-        desired -= rb.velocity;
-        desired = Vector3.ClampMagnitude(desired, maxforce);
-
-        return desired;
     }
 
     public void SetManager(FlockManager flockManager)
@@ -98,8 +112,10 @@ public class Seeker : MonoBehaviour, IColliderEventHoverEnterHandler
             moving = true;
             target = path.PokeSheep(sheepIndex);
         }
-        Debug.Log(eventData.eventCaster.transform.GetComponentInParent<VivePoseTracker>());
-        //ViveInput.TriggerHapticPulseEx(eventData.eventCaster.transform.GetComponentInParent<VivePoseTracker>().viveRole, 500);
-        //SetGravityEnabled(!m_gravityEnabled);
+
+        currentTime = 0;
+        ViveRoleProperty hr = eventData.eventCaster.gameObject.GetComponent<ViveColliderEventCaster>().viveRole;
+        ViveInput.TriggerHapticPulse(hr, 1500);
+        controllerVelocity = VRModule.GetDeviceState(hr.GetDeviceIndex()).velocity.normalized * maxspeed;
     }
 }
