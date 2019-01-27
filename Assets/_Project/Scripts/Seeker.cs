@@ -49,7 +49,7 @@ public class Seeker : MonoBehaviour, IColliderEventHoverEnterHandler
         if (target)
         {
             Vector3 diff = target.position - transform.position;
-            if(diff.magnitude > 0.03f)
+            if(diff.magnitude > 0.031f)
             {
                 desired = (target.position - transform.position).normalized * maxspeed;
                 desired -= rb.velocity;
