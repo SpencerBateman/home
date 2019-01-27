@@ -32,6 +32,11 @@ public class Walker : MonoBehaviour
         rb.AddForce((manager.transform.position - transform.position).normalized * acceleration);
         tempForce = Vector3.zero;
 
+        if(rb.velocity.magnitude < 0.001f)
+        {
+            rb.Sleep();
+        }
+
         visibleSheep.LookAt(manager.transform.position, visibleSheep.up);
         visibleSheep.Rotate(Vector3.right * 90f);
     }

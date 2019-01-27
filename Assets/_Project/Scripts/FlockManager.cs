@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using System.Collections;
+using UnityEngine;
 
 public class FlockManager : MonoBehaviour
 {
@@ -6,6 +7,7 @@ public class FlockManager : MonoBehaviour
 
     public GameObject walkerPrefab;
     public GameObject seekerPrefab;
+    public Transform cam;
     public Pather path;
 
     public int flockSize = 20;
@@ -39,27 +41,47 @@ public class FlockManager : MonoBehaviour
         {
             walkers = new Walker[0];
         }
+
+        StartCoroutine(GrowCollider(transform.Find("mdl_sphere/Colliders/Cube")));
     }
+
+    private IEnumerator GrowCollider(Transform t)
+    {
+        float idealScale = 0.1f;
+        while(t.localScale.y < idealScale - 0.005f)
+        {
+            Vector3 newScale = t.localScale;
+            newScale.y = Mathf.Lerp(newScale.y, idealScale, Time.deltaTime);
+            t.localScale = newScale;
+            yield return null;
+        }
+
+        t.localScale = new Vector3(t.localScale.x, idealScale, t.localScale.z);
+    }
+
 
     private void Start()
     {
-        Seeker s = Instantiate(seekerPrefab, transform).GetComponent<Seeker>();
-        path.SetupSheep(s);
-        s.SetManager(this);
+        if(!hasFlock)
+        {
+            Seeker s = Instantiate(seekerPrefab, transform).GetComponent<Seeker>();
+            path.SetupSheep(s);
+            s.SetManager(this);
 
-        Seeker s2 = Instantiate(seekerPrefab, transform).GetComponent<Seeker>();
-        path.SetupSheep(s2);
-        s2.SetManager(this);
+            Seeker s2 = Instantiate(seekerPrefab, transform).GetComponent<Seeker>();
+            path.SetupSheep(s2);
+            s2.SetManager(this);
 
-        path.SetupNodes(GetComponent<SphereCollider>().radius);
+            path.SetupNodes(GetComponent<SphereCollider>().radius);
+        }
     }
 
     void Update()
     {
         foreach(Walker w in walkers)
         {
-            w.AddForce(Separate(w.transform));
-            w.AddForce(Align(w.transform));
+            w.AddForce(Separate(w.transform) * 2);
+            w.AddForce(Align(w.transform) * 2);
             //w.AddForce(Cohere(w.transform));
         }
     }

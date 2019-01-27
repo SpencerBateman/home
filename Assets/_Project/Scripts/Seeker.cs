@@ -26,11 +26,14 @@ public class Seeker : MonoBehaviour, IColliderEventHoverEnterHandler
     private Vector3 last;
     public Vector3 controllerVelocity;
     public Vector3 desired;
-    float adjustTime = 0.5f;
-    float currentTime = 0;
+    private float adjustTime = 0.5f;
+    private float currentTime = 0;
+    private Animator anim;
+    private Quaternion savedRotation;
 
     void Start()
     {
+        anim = transform.Find("Body/mdl_sheep").GetComponent<Animator>();
         GetComponent<MeshRenderer>().enabled = false;
         body = transform.GetChild(0);
 
@@ -46,30 +49,41 @@ public class Seeker : MonoBehaviour, IColliderEventHoverEnterHandler
         if (target)
         {
             Vector3 diff = target.position - transform.position;
-            if(diff.magnitude > 0.025f)
+            if(diff.magnitude > 0.03f)
             {
                 desired = (target.position - transform.position).normalized * maxspeed;
                 desired -= rb.velocity;
                 desired = Vector3.ClampMagnitude(desired, maxforce);
 
-                if(currentTime < adjustTime)
+                if (currentTime < adjustTime)
                 {
                     rb.velocity = Vector3.Lerp(controllerVelocity, desired, currentTime / adjustTime);
                     currentTime += Time.deltaTime;
-                } else
+                }
+                else
                 {
                     rb.velocity = desired;
                 }
 
                 last = desired;
 
+                if(diff.magnitude < 0.032f)
+                {
+                    anim.SetBool("isWalking", false);
+                    body.rotation = savedRotation;
 
-                body.LookAt(manager.transform.position, body.up);
-                body.Rotate(Vector3.right * 90f);
+                } else
+                {
+                    body.LookAt(manager.transform.position, body.up);
+                    body.Rotate(Vector3.right * 90f);
+                    savedRotation = body.rotation;
+                }
+
                 velocity = diff.magnitude;
 
             } else
             {
+                //anim.SetBool("isWalking", false);
                 target = null;
                 moving = false;
                 controllerVelocity = Vector3.zero;
@@ -85,8 +99,7 @@ public class Seeker : MonoBehaviour, IColliderEventHoverEnterHandler
         {
             poke = false;
             currentTime = 1;
-            moving = true;
-            target = path.PokeSheep(sheepIndex);
+            StartWalking();
         }
 
         rb.AddForce((manager.transform.position - transform.position).normalized * gravity);
@@ -97,6 +110,7 @@ public class Seeker : MonoBehaviour, IColliderEventHoverEnterHandler
         manager = flockManager;
         transform.LookAt(manager.transform.position);
         transform.Rotate(Vector3.right * 90f);
+        //transform.Find("Body/mdl_sheep/root/head/head 1").GetComponent<HesWatchingYou>().cam = flockManager.cam;
     }
 
     public void SetPath(Pather p, int i)
@@ -107,15 +121,21 @@ public class Seeker : MonoBehaviour, IColliderEventHoverEnterHandler
 
     public void OnColliderEventHoverEnter(ColliderHoverEventData eventData)
     {
-        if(!moving)
-        {
-            moving = true;
-            target = path.PokeSheep(sheepIndex);
-        }
+        if(!moving) StartWalking();
 
         currentTime = 0;
         ViveRoleProperty hr = eventData.eventCaster.gameObject.GetComponent<ViveColliderEventCaster>().viveRole;
         ViveInput.TriggerHapticPulse(hr, 1500);
         controllerVelocity = VRModule.GetDeviceState(hr.GetDeviceIndex()).velocity.normalized * maxspeed;
+    }
+
+    private void StartWalking()
+    {
+        target = path.PokeSheep(sheepIndex);
+        if(target != null)
+        {
+            moving = true;
+            anim.SetBool("isWalking", true);
+        }
     }
 }
