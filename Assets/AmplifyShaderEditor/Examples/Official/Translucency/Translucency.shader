@@ -5,7 +5,6 @@ Shader "ASESampleShaders/Translucency"
 	Properties
 	{
 		_Color0("Color 0", Color) = (0,0,0,0)
-		_Specular("Specular", Range( 0 , 1)) = 0
 		[Header(Translucency)]
 		_Translucency("Strength", Range( 0 , 50)) = 1
 		_TransNormalDistortion("Normal Distortion", Range( 0 , 1)) = 0.1
@@ -32,18 +31,18 @@ Shader "ASESampleShaders/Translucency"
 		CGPROGRAM
 		#include "UnityPBSLighting.cginc"
 		#pragma target 3.0
-		#pragma surface surf StandardSpecularCustom keepalpha addshadow fullforwardshadows exclude_path:deferred 
+		#pragma surface surf StandardCustom keepalpha addshadow fullforwardshadows exclude_path:deferred 
 		struct Input
 		{
 			half2 uv_texcoord;
 		};
 
-		struct SurfaceOutputStandardSpecularCustom
+		struct SurfaceOutputStandardCustom
 		{
 			half3 Albedo;
 			half3 Normal;
 			half3 Emission;
-			half3 Specular;
+			half Metallic;
 			half Smoothness;
 			half Occlusion;
 			half Alpha;
@@ -54,7 +53,6 @@ Shader "ASESampleShaders/Translucency"
 		uniform sampler2D _Albedo;
 		uniform float4 _Albedo_ST;
 		uniform half4 _Tint;
-		uniform half _Specular;
 		uniform half _Translucency;
 		uniform half _TransNormalDistortion;
 		uniform half _TransScattering;
@@ -65,7 +63,7 @@ Shader "ASESampleShaders/Translucency"
 		uniform float4 _Depth_ST;
 		uniform half4 _Color0;
 
-		inline half4 LightingStandardSpecularCustom(SurfaceOutputStandardSpecularCustom s, half3 viewDir, UnityGI gi )
+		inline half4 LightingStandardCustom(SurfaceOutputStandardCustom s, half3 viewDir, UnityGI gi )
 		{
 			#if !DIRECTIONAL
 			float3 lightAtten = gi.light.color;
@@ -77,18 +75,18 @@ Shader "ASESampleShaders/Translucency"
 			half3 translucency = lightAtten * (transVdotL * _TransDirect + gi.indirect.diffuse * _TransAmbient) * s.Translucency;
 			half4 c = half4( s.Albedo * translucency * _Translucency, 0 );
 
-			SurfaceOutputStandardSpecular r;
+			SurfaceOutputStandard r;
 			r.Albedo = s.Albedo;
 			r.Normal = s.Normal;
 			r.Emission = s.Emission;
-			r.Specular = s.Specular;
+			r.Metallic = s.Metallic;
 			r.Smoothness = s.Smoothness;
 			r.Occlusion = s.Occlusion;
 			r.Alpha = s.Alpha;
-			return LightingStandardSpecular (r, viewDir, gi) + c;
+			return LightingStandard (r, viewDir, gi) + c;
 		}
 
-		inline void LightingStandardSpecularCustom_GI(SurfaceOutputStandardSpecularCustom s, UnityGIInput data, inout UnityGI gi )
+		inline void LightingStandardCustom_GI(SurfaceOutputStandardCustom s, UnityGIInput data, inout UnityGI gi )
 		{
 			#if defined(UNITY_PASS_DEFERRED) && UNITY_ENABLE_REFLECTION_BUFFERS
 				gi = UnityGlobalIllumination(data, s.Occlusion, s.Normal);
@@ -98,13 +96,11 @@ Shader "ASESampleShaders/Translucency"
 			#endif
 		}
 
-		void surf( Input i , inout SurfaceOutputStandardSpecularCustom o )
+		void surf( Input i , inout SurfaceOutputStandardCustom o )
 		{
 			float2 uv_Albedo = i.uv_texcoord * _Albedo_ST.xy + _Albedo_ST.zw;
 			o.Normal = UnpackNormal( tex2D( _Normal, uv_Albedo ) );
 			o.Albedo = ( _Tint * tex2D( _Albedo, uv_Albedo ) ).rgb;
-			half3 temp_cast_1 = (_Specular).xxx;
-			o.Specular = temp_cast_1;
 			float2 uv_Depth = i.uv_texcoord * _Depth_ST.xy + _Depth_ST.zw;
 			o.Translucency = ( tex2D( _Depth, uv_Depth ) * _Color0 ).rgb;
 			o.Alpha = 1;
@@ -117,7 +113,7 @@ Shader "ASESampleShaders/Translucency"
 }
 /*ASEBEGIN
 Version=16201
-1948;123;1245;608;1156.413;398.184;1.4;True;True
+1948;117;1245;614;1156.413;402.384;1.4;True;True
 Node;AmplifyShaderEditor.TextureCoordinatesNode;17;-1016.736,-72.31985;Float;False;0;9;2;3;2;SAMPLER2D;;False;0;FLOAT2;1,1;False;1;FLOAT2;0,0;False;5;FLOAT2;0;FLOAT;1;FLOAT;2;FLOAT;3;FLOAT;4
 Node;AmplifyShaderEditor.ColorNode;10;-505.058,-441.5712;Float;False;Property;_Tint;Tint;12;0;Create;True;0;0;False;0;0,0,0,0;1,1,1,0;False;0;5;COLOR;0;FLOAT;1;FLOAT;2;FLOAT;3;FLOAT;4
 Node;AmplifyShaderEditor.ColorNode;6;-528.7906,325.7297;Float;False;Property;_Color0;Color 0;0;0;Create;True;0;0;False;0;0,0,0,0;1,1,1,0;False;0;5;COLOR;0;FLOAT;1;FLOAT;2;FLOAT;3;FLOAT;4
@@ -127,7 +123,7 @@ Node;AmplifyShaderEditor.RangedFloatNode;16;-169.3906,29.62976;Float;False;Prope
 Node;AmplifyShaderEditor.SimpleMultiplyOpNode;11;-119.7905,-259.6702;Float;False;2;2;0;COLOR;0,0,0,0;False;1;COLOR;0,0,0,0;False;1;COLOR;0
 Node;AmplifyShaderEditor.SamplerNode;12;-566.9902,-73.27022;Float;True;Property;_Normal;Normal;10;0;Create;True;0;0;False;0;None;None;True;0;True;bump;Auto;True;Object;-1;Auto;Texture2D;6;0;SAMPLER2D;;False;1;FLOAT2;0,0;False;2;FLOAT;1;False;3;FLOAT2;0,0;False;4;FLOAT2;0,0;False;5;FLOAT;1;False;5;FLOAT3;0;FLOAT;1;FLOAT;2;FLOAT;3;FLOAT;4
 Node;AmplifyShaderEditor.SimpleMultiplyOpNode;8;-93.79053,185.3298;Float;False;2;2;0;COLOR;0,0,0,0;False;1;COLOR;0,0,0,0;False;1;COLOR;0
-Node;AmplifyShaderEditor.StandardSurfaceOutputNode;0;186.6,-73.70001;Half;False;True;2;Half;ASEMaterialInspector;0;0;StandardSpecular;ASESampleShaders/Translucency;False;False;False;False;False;False;False;False;False;False;False;False;False;False;True;False;False;False;False;False;Back;1;False;-1;3;False;-1;False;0;False;-1;0;False;-1;False;0;Opaque;0.5;True;True;0;False;Opaque;;Geometry;ForwardOnly;True;True;True;True;True;True;True;True;True;True;True;True;True;True;True;True;True;0;False;-1;False;0;False;-1;255;False;-1;255;False;-1;0;False;-1;0;False;-1;0;False;-1;0;False;-1;0;False;-1;0;False;-1;0;False;-1;0;False;-1;False;0;4;10;25;False;0.5;True;3;1;False;-1;10;False;-1;0;0;False;-1;0;False;-1;1;False;-1;1;False;-1;0;False;0;0,0,0,0;VertexOffset;True;False;Cylindrical;False;Relative;0;;-1;2;-1;-1;0;False;0;0;False;-1;-1;0;False;-1;0;0;0;16;0;FLOAT3;0,0,0;False;1;FLOAT3;0,0,0;False;2;FLOAT3;0,0,0;False;3;FLOAT3;0,0,0;False;4;FLOAT;0;False;5;FLOAT;0;False;6;FLOAT3;0,0,0;False;7;FLOAT3;0,0,0;False;8;FLOAT;0;False;9;FLOAT;0;False;10;FLOAT;0;False;13;FLOAT3;0,0,0;False;11;FLOAT3;0,0,0;False;12;FLOAT3;0,0,0;False;14;FLOAT4;0,0,0,0;False;15;FLOAT3;0,0,0;False;0
+Node;AmplifyShaderEditor.StandardSurfaceOutputNode;0;186.6,-73.70001;Half;False;True;2;Half;ASEMaterialInspector;0;0;Standard;ASESampleShaders/Translucency;False;False;False;False;False;False;False;False;False;False;False;False;False;False;True;False;False;False;False;False;Back;1;False;-1;3;False;-1;False;0;False;-1;0;False;-1;False;0;Opaque;0.5;True;True;0;False;Opaque;;Geometry;ForwardOnly;True;True;True;True;True;True;True;True;True;True;True;True;True;True;True;True;True;0;False;-1;False;0;False;-1;255;False;-1;255;False;-1;0;False;-1;0;False;-1;0;False;-1;0;False;-1;0;False;-1;0;False;-1;0;False;-1;0;False;-1;False;0;4;10;25;False;0.5;True;3;1;False;-1;10;False;-1;0;0;False;-1;0;False;-1;1;False;-1;1;False;-1;0;False;0;0,0,0,0;VertexOffset;True;False;Cylindrical;False;Relative;0;;-1;2;-1;-1;0;False;0;0;False;-1;-1;0;False;-1;0;0;0;16;0;FLOAT3;0,0,0;False;1;FLOAT3;0,0,0;False;2;FLOAT3;0,0,0;False;3;FLOAT;0;False;4;FLOAT;0;False;5;FLOAT;0;False;6;FLOAT3;0,0,0;False;7;FLOAT3;0,0,0;False;8;FLOAT;0;False;9;FLOAT;0;False;10;FLOAT;0;False;13;FLOAT3;0,0,0;False;11;FLOAT3;0,0,0;False;12;FLOAT3;0,0,0;False;14;FLOAT4;0,0,0,0;False;15;FLOAT3;0,0,0;False;0
 WireConnection;9;1;17;0
 WireConnection;11;0;10;0
 WireConnection;11;1;9;0
@@ -136,7 +132,6 @@ WireConnection;8;0;7;0
 WireConnection;8;1;6;0
 WireConnection;0;0;11;0
 WireConnection;0;1;12;0
-WireConnection;0;3;16;0
 WireConnection;0;7;8;0
 ASEEND*/
-//CHKSM=19E7DC29BD82E9DC21C5A390275DBEB03D5F3635
+//CHKSM=7E75F77646E5D581C158048D95F960947DAB197E
